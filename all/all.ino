@@ -5,7 +5,10 @@
 #include <Max72xxPanel.h>
 #include <DS3231.h>
 #include <Wire.h>
-
+#include "dht.h"
+#define dht_apin A0 // Analog Pin sensor is connected to
+ 
+dht DHT;
 DS3231  rtc(SDA, SCL);
 
 Time  t;
@@ -32,6 +35,9 @@ void setup() {
   Wire.begin();
 rtc.begin();
 Serial.begin(9600);
+delay(500);//Delay to let system boot
+  Serial.println("DHT11 Humidity & temperature Sensor\n\n");
+  delay(1000);//Wait before accessing Sensor
 for (int i = 0; i < 5; i++) {
   lc.shutdown(i,false); /*The MAX72XX is in power-saving mode on startup,we have to do a wakeup call*/
   lc.setIntensity(i,8);/* Set the brightness to a medium values */
@@ -60,6 +66,30 @@ for(int i=0; i<4 ; i++){
 }
 
 void printPrice(int v, int b) {
+    int ones;
+    int tens;
+    int hundreds;
+    boolean negative;  
+
+    if(v < -999 || v > 999) 
+       return;
+    if(v<0) {
+        negative=true;
+        v=v*-1;
+    }
+    ones=v%10;
+    v=v/10;
+    tens=v%10;
+    v=v/10;
+    hundreds=v;     
+    //Now print the number digit by digit
+    lc.setDigit(b,0,(byte)hundreds,true);
+    lc.setDigit(b,1,(byte)tens,false);
+    lc.setDigit(b,2,(byte)ones,false);
+}
+
+void printTemperature(int v, int b) {
+    int v= v.toInt();
     int ones;
     int tens;
     int hundreds;
@@ -153,6 +183,7 @@ void loop() {
 }}
    
    while(Serial.available() == 0){
+        DHT.read11(dht_apin);
         t = rtc.getTime();
         Hor = t.hour;
         Min = t.min;
@@ -161,7 +192,7 @@ void loop() {
         printTime(Min,2);
         printTime(Hor,4);
         matrixtext(s);
+        printTemperature(r,4);
           }
     i=1;
 }
-   
